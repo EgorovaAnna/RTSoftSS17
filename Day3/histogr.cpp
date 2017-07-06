@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 #include <fstream>
-//#include <dir.h>
+#include <cv.h>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/videoio.hpp>
@@ -10,38 +10,88 @@
 using namespace std;
 using namespace cv;
 
+class All
+{
+	Mat mat;
+	Mat hist;
+	double result;
+public:
+	All();
+	void compHist(All obr);
+	void calc(std::string path);
+	void calc(Mat tm);
+	bool operator<(All all2);
+	Mat getHist();
+	Mat getMat();
+	double getResult();
+};
+All::All()
+{
+	mat = Mat();
+	hist = Mat();
+	result = 0;
+}
+Mat All::getHist()
+{
+	return hist;
+}
+Mat All::getMat()
+{
+	return mat;
+}
+void All::compHist(All obr)
+{
+	result = compareHist(hist, obr.getHist(), CV_COMP_BHATTACHARYYA);
+}
+void All::calc(std::string path)
+{
+	int histSize[] = {16, 16, 16};
+	const int channels[] = {0, 1, 2};
+	float arang[] = {0, 256};
+	float brang[] = {0, 256};
+	float crang[] = {0, 256};
+	const float* ranges[] = {arang, brang, crang};
+	mat = imread(path, CV_8U);
+	calcHist(&mat, 1, &channels[0], Mat(), hist, 3, &histSize[0], ranges, true, false);
+}
+void All::calc(Mat tm)
+{
+	int histSize[] = {16, 16, 16};
+	const int channels[] = {0, 1, 2};
+	float arang[] = {0, 256};
+	float brang[] = {0, 256};
+	float crang[] = {0, 256};
+	const float* ranges[] = {arang, brang, crang};
+	mat = tm;
+	calcHist(&mat, 1, &channels[0], Mat(), hist, 3, &histSize[0], ranges, true, false);
+}
+bool All::operator<(All all2)
+{
+	return result < all2.getResult();
+}
+
 class SortImage
 {
 public:
-	vector<Mat> operator()(std::string path, int accuracy)
-	//void operator()(string path, int accuracy)
+	vector<Mat> operator()(std::string path, Mat obr)
 	{
+		vector<All> all;
 		vector<Mat> mats;
-		vector<Mat> hists;
-		char dir[100], chd[path.size() + 1];
+		All obraz;
 		int i;
-		int histSize[] = {16, 16, 16};
-		const int channels[] = {0, 1, 2};
-		float arang[] = {0, 256};
-		float brang[] = {0, 256};
-		float crang[] = {0, 256};
-		const float* ranges[] = {arang, brang, crang};
 		vector<std::string> files = readls(path);
-		//getcurdir(0, dir);
-		for(i = 0; i <= path.size(); i++)
-			chd[i] = path[i];
-		chd[i] = 0;
-		//chwdir(chd);
+		obraz.calc(obr);
 		for(i = 0; i <= files.size(); i++)
 		{
 			cout << files[i] << endl;
-			mats.push_back(Mat());
-			hists.push_back(Mat());
-			mats.back() = imread(path + files[i], CV_8U);
-			//calcHist(&mats[i], 1, &channels[0], Mat(), hists[i], 3, histSize, ranges, true, false);
+			all.push_back(All());
+			all.back().calc(path + "/" + files[i]);
+			all.back().compHist(obraz);
 		}
-		//chwdir(dir);
-		return hists;
+		std::sort(all.begin(), all.end());
+		for(i = 0; i <= all.size(); i++)
+			mats.push_back(all[i].getMat());
+		return mats;
 	}
 	vector<std::string> readls(std::string path)
 	{
@@ -68,8 +118,11 @@ public:
 };
 int main()
 {
+	Mat obr = imread("test/1.jpeg", CV_8U);
+	namedWindow( "Display window", WINDOW_AUTOSIZE );
+    imshow( "Display window", obr );  
 	SortImage a;
-	vector<Mat> hi = a("test/", 11);
-	//namedWindow( "Histogram", 1 );
-    //imshow( "Histogram", hi[0] );
+	vector<Mat> mat = a("test/", obr);
+	namedWindow( "Histogram", 1 );
+    imshow( "Histogram", mat[0] );
 }
