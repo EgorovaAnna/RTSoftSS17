@@ -39,7 +39,7 @@ void Plan::countPosition(int xOnFrame, int yOnFrame)
 	double y = 2*length*asin(yOnFrame/lengthOnFrame)/3.14 + humanSq;
 	double currentWidth = (double)yOnFrame*(widthOnFrameEnd - widthOnFrameStart)/lengthOnFrame + widthOnFrameEnd;
 	double x = (xOnFrame - (widthOnFrameStart - currentWidth)/2)*width/currentWidth;
-	human = Rect(floor(x), floor(y), humanSq, humanSq);
+	human = Rect(floor(x), length - floor(y), humanSq, humanSq);
 }
 void Plan::drawPosition(int xOnFrame, int yOnFrame)
 {
@@ -55,7 +55,7 @@ class BoundingBox
 public:
 	BoundingBox();
 	void operator()(Mat &frame, Plan &plan);
-	void showOnPlan(Plan &plan);
+	void showOnPlan(Plan &plan, int rows);
 };
 BoundingBox::BoundingBox()
 {
@@ -68,11 +68,11 @@ void BoundingBox::operator()(Mat &frame, Plan &plan)
 	pMOG2 -> apply(grayframe, fgMaskMOG2);
 	rec = boundingRect(fgMaskMOG2);
 	rectangle(frame, rec, cv::Scalar(250, 250, 250), 2);
-	showOnPlan(plan);
+	showOnPlan(plan, frame.rows);
 }
-void BoundingBox::showOnPlan(Plan &plan)
+void BoundingBox::showOnPlan(Plan &plan, int rows)
 {
-	plan.drawPosition(rec.tl().x, rec.tl().y);
+	plan.drawPosition(rec.tl().x, rows - rec.br().y);
 }
 
 int main()
